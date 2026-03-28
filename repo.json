@@ -1,0 +1,23 @@
+[
+  {
+    "Author": "Bryer",
+    "Name": "XIVBurner",
+    "Punchline": "Hardware monitoring overlay for FFXIV.",
+    "Description": "Shows real-time CPU, GPU, RAM and FPS information in an in-game overlay. Commands: /XIVBurner and /XIVBurnerconfig.",
+    "InternalName": "XIVBurner",
+    "AssemblyVersion": "1.0.1",
+    "RepoUrl": "https://github.com/seventity7/XIVBurner",
+    "ApplicableVersion": "any",
+    "DalamudApiLevel": 14,
+    "TestingDalamudApiLevel": 14,
+    "IsHide": "False",
+    "IsTestingExclusive": "False",
+    "DownloadCount": 0,
+    "LastUpdate": 0,
+    "LoadPriority": 69420,
+    "LoadRequiredState": 2,
+    "LoadSync": true,
+    "DownloadLinkInstall": "https://github.com/seventity7/XIVBurner/releases/latest/download/XIVBurner.zip",
+    "IconUrl": "https://raw.githubusercontent.com/seventity7/XIVBurner/main/xivburner.png"
+  }
+]

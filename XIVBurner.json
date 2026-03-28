@@ -1,0 +1,14 @@
+{
+  "Author": "Bryer",
+  "Name": "XIVBurner",
+  "Punchline": "Hardware monitoring overlay for FFXIV.",
+  "Description": "Shows real-time CPU, GPU, RAM and FPS information in an in-game overlay. Commands: /XIVBurner and /XIVBurnerconfig.",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "hardware",
+    "overlay",
+    "monitoring",
+    "performance",
+    "ffxiv"
+  ]
+}
