@@ -27,6 +27,8 @@ public sealed class MainWindow : Window, IDisposable
 
     private static readonly Vector4 DefaultTextColor = new(1f, 1f, 1f, 1f);
 
+    private Vector2 cachedWindowSize = new(260f, 120f);
+
     public MainWindow(Configuration configuration, TelemetryService telemetry)
         : base("###XIVBurnerMain")
     {
@@ -61,10 +63,7 @@ public sealed class MainWindow : Window, IDisposable
         else
             this.Flags &= ~ImGuiWindowFlags.NoMove;
 
-        var rows = this.BuildRows();
-        var totalSize = this.CalculateWindowSize(rows);
-
-        ImGui.SetNextWindowSize(totalSize, ImGuiCond.Always);
+        ImGui.SetNextWindowSize(this.cachedWindowSize, ImGuiCond.Always);
 
         ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0.0f);
@@ -76,11 +75,19 @@ public sealed class MainWindow : Window, IDisposable
     {
         var rows = this.BuildRows();
 
+        var baseScale = MathF.Max(0.70f, this.configuration.GlobalTextScale);
+        var requiredSize = this.CalculateWindowSize(rows);
+
+        if (!NearlyEqual(requiredSize, this.cachedWindowSize))
+        {
+            this.cachedWindowSize = requiredSize;
+            ImGui.SetWindowSize(requiredSize);
+        }
+
         var windowPos = ImGui.GetWindowPos();
-        var windowSize = ImGui.GetWindowSize();
+        var windowSize = this.cachedWindowSize;
         var drawList = ImGui.GetWindowDrawList();
         var font = ImGui.GetFont();
-        var baseScale = MathF.Max(0.70f, this.configuration.GlobalTextScale);
         var lineHeight = this.MeasureTextHeight("Ag", baseScale, 1.0f);
         var paddingY = this.GetVerticalPadding();
         var lineGap = this.GetLineGap();
@@ -134,6 +141,11 @@ public sealed class MainWindow : Window, IDisposable
     {
         ImGui.PopStyleColor(1);
         ImGui.PopStyleVar(3);
+    }
+
+    private static bool NearlyEqual(Vector2 a, Vector2 b)
+    {
+        return MathF.Abs(a.X - b.X) < 0.5f && MathF.Abs(a.Y - b.Y) < 0.5f;
     }
 
     private List<DisplayRow> BuildRows()
@@ -196,7 +208,7 @@ public sealed class MainWindow : Window, IDisposable
             if (this.configuration.ShowVram)
             {
                 var value = snapshot.GpuVramTotalGb > 0.0001f
-                    ? $"{snapshot.GpuVramUsedGb:0} / {snapshot.GpuVramTotalGb:0} GB"
+                    ? $"{snapshot.GpuVramUsedGb:0}/{snapshot.GpuVramTotalGb:0} GB"
                     : "N/A";
                 AddGpuVerticalRow("VRAM:", this.configuration.VramColor, this.configuration.VramBold, value);
             }
@@ -205,7 +217,7 @@ public sealed class MainWindow : Window, IDisposable
         if (this.configuration.ShowRam)
         {
             var value = snapshot.RamTotalGb > 0.0001f
-                ? $"{snapshot.RamUsedGb:0} / {snapshot.RamTotalGb:0} GB"
+                ? $"{snapshot.RamUsedGb:0}/{snapshot.RamTotalGb:0} GB"
                 : "N/A";
             miscRows.Add(this.MakeMetricRow("RAM", this.configuration.RamLabelColor, this.configuration.RamLabelBold, "", this.configuration.RamColor, this.configuration.RamBold, value, 0f));
         }

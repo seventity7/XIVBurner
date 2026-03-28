@@ -10,92 +10,109 @@ namespace XIVBurner;
 
 public sealed class Plugin : IDalamudPlugin
 {
+    public string Name => "XIVBurner";
+
+    private const string CommandName = "/xivburner";
+
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
-    [PluginService] internal static IPluginLog Log { get; private set; } = null!;
+    [PluginService] internal static IClientState ClientState { get; private set; } = null!;
 
-    private const string MainCommandName = "/XIVBurner";
-    private const string ConfigCommandName = "/XIVBurnerconfig";
+    private readonly WindowSystem windowSystem = new("XIVBurner");
 
-    public Configuration Configuration { get; init; }
-
-    public readonly WindowSystem WindowSystem = new("XIVBurner");
-
-    private ConfigWindow ConfigWindow { get; init; }
-    private MainWindow MainWindow { get; init; }
-    private TelemetryService Telemetry { get; init; }
+    private readonly Configuration configuration;
+    private readonly TelemetryService telemetryService;
+    private readonly MainWindow mainWindow;
+    private readonly ConfigWindow configWindow;
 
     public Plugin()
     {
-        this.Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-        this.Configuration.Initialize(PluginInterface);
+        this.configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+        this.configuration.Initialize(PluginInterface);
 
-        this.Telemetry = new TelemetryService();
-        this.MainWindow = new MainWindow(this.Configuration, this.Telemetry);
-        this.ConfigWindow = new ConfigWindow(
-            this.Configuration,
-            () => this.MainWindow.IsOpen,
-            value => this.MainWindow.IsOpen = value);
+        this.telemetryService = new TelemetryService();
 
-        this.WindowSystem.AddWindow(this.ConfigWindow);
-        this.WindowSystem.AddWindow(this.MainWindow);
+        this.mainWindow = new MainWindow(this.configuration, this.telemetryService);
+        this.configWindow = new ConfigWindow(
+            this.configuration,
+            () => this.mainWindow.IsOpen,
+            value =>
+            {
+                this.mainWindow.IsOpen = value;
+                this.configuration.OverlayVisible = value;
+                this.configuration.Save();
+            });
 
-        CommandManager.AddHandler(MainCommandName, new CommandInfo(this.OnMainCommand)
-        {
-            HelpMessage = "Toggle XIVBurner overlay.",
-        });
+        this.windowSystem.AddWindow(this.mainWindow);
+        this.windowSystem.AddWindow(this.configWindow);
 
-        CommandManager.AddHandler(ConfigCommandName, new CommandInfo(this.OnConfigCommand)
+        CommandManager.AddHandler(CommandName, new CommandInfo(this.OnCommand)
         {
             HelpMessage = "Open XIVBurner settings.",
         });
 
-        PluginInterface.UiBuilder.Draw += this.DrawUi;
-        PluginInterface.UiBuilder.OpenConfigUi += this.ToggleConfigUi;
-        PluginInterface.UiBuilder.OpenMainUi += this.ToggleMainUi;
+        PluginInterface.UiBuilder.Draw += this.DrawUI;
+        PluginInterface.UiBuilder.OpenConfigUi += this.OpenConfigUI;
+        PluginInterface.UiBuilder.OpenMainUi += this.OpenMainUI;
 
-        this.MainWindow.IsOpen = this.Configuration.OverlayVisible;
+        ClientState.Login += this.OnLogin;
+        ClientState.Logout += this.OnLogout;
+
+        this.mainWindow.IsOpen = true;
+        this.configuration.OverlayVisible = true;
+        this.configuration.Save();
     }
 
     public void Dispose()
     {
-        PluginInterface.UiBuilder.Draw -= this.DrawUi;
-        PluginInterface.UiBuilder.OpenConfigUi -= this.ToggleConfigUi;
-        PluginInterface.UiBuilder.OpenMainUi -= this.ToggleMainUi;
+        ClientState.Login -= this.OnLogin;
+        ClientState.Logout -= this.OnLogout;
 
-        CommandManager.RemoveHandler(MainCommandName);
-        CommandManager.RemoveHandler(ConfigCommandName);
+        PluginInterface.UiBuilder.Draw -= this.DrawUI;
+        PluginInterface.UiBuilder.OpenConfigUi -= this.OpenConfigUI;
+        PluginInterface.UiBuilder.OpenMainUi -= this.OpenMainUI;
 
-        this.WindowSystem.RemoveAllWindows();
+        CommandManager.RemoveHandler(CommandName);
 
-        this.ConfigWindow.Dispose();
-        this.MainWindow.Dispose();
-        this.Telemetry.Dispose();
+        this.windowSystem.RemoveAllWindows();
+
+        this.mainWindow.Dispose();
+        this.configWindow.Dispose();
+        this.telemetryService.Dispose();
     }
 
-    private void DrawUi()
+    private void OnCommand(string command, string args)
     {
-        this.WindowSystem.Draw();
-        this.Configuration.OverlayVisible = this.MainWindow.IsOpen;
+        this.configWindow.IsOpen = true;
     }
 
-    private void OnMainCommand(string command, string args)
+    private void DrawUI()
     {
-        this.MainWindow.Toggle();
+        this.mainWindow.IsOpen = this.configuration.OverlayVisible;
+        this.windowSystem.Draw();
     }
 
-    private void OnConfigCommand(string command, string args)
+    private void OpenConfigUI()
     {
-        this.ConfigWindow.IsOpen = true;
+        this.configWindow.IsOpen = true;
     }
 
-    private void ToggleConfigUi()
+    private void OpenMainUI()
     {
-        this.ConfigWindow.Toggle();
+        this.mainWindow.IsOpen = true;
+        this.configuration.OverlayVisible = true;
+        this.configuration.Save();
     }
 
-    private void ToggleMainUi()
+    private void OnLogin()
     {
-        this.MainWindow.Toggle();
+        this.mainWindow.IsOpen = true;
+        this.configuration.OverlayVisible = true;
+        this.configuration.Save();
+    }
+
+    private void OnLogout(int type, int code)
+    {
+        this.mainWindow.IsOpen = true;
     }
 }

@@ -5,7 +5,7 @@
     "Punchline": "Hardware monitoring overlay for FFXIV.",
     "Description": "Shows real-time CPU, GPU, RAM and FPS information in an in-game overlay. Commands: /XIVBurner and /XIVBurnerconfig.",
     "InternalName": "XIVBurner",
-    "AssemblyVersion": "1.0.1",
+    "AssemblyVersion": "1.0.2",
     "RepoUrl": "https://github.com/seventity7/XIVBurner",
     "ApplicableVersion": "any",
     "DalamudApiLevel": 14,
